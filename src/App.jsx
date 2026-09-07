@@ -13,6 +13,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import RecoveryRedirect from './components/RecoveryRedirect'
 import UpdatePassword from './pages/UpdatePassword'
 import ProfileSettings from './pages/Oli/ProfileSettings'
+import Volunteers from './pages/Oli/Volunteers'
 import CollectionPoints from './pages/CollectionPoints'
 
 function App() {
@@ -53,6 +54,7 @@ function App() {
         />
 
         <Route path="/oli/perfiles" element={<ProtectedRoute requiredRole="ADMIN"><ProfileSettings /></ProtectedRoute>} />
+        <Route path="/oli/voluntarios" element={<ProtectedRoute requiredRole="ADMIN"><Volunteers /></ProtectedRoute>} />
 
       </Routes>
     </BrowserRouter>

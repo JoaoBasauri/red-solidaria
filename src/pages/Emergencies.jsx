@@ -1,4 +1,5 @@
 import EmergencyPhoto from "../components/EmergencyPhoto";
+import EmergencyResources from "../components/EmergencyResources";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import PublicLayout from "../components/PublicLayout";
@@ -54,7 +55,7 @@ export default function Emergencies() {
             </div>
           </div>
           {item.tipo_emergencia && <p className="mt-5 text-sm text-slate-600">Tipo de emergencia: {item.tipo_emergencia}</p>}
-          <h3 className="mt-4 font-bold">Recursos necesarios:</h3><p className="mt-1 text-sm leading-6">Consulta con el equipo OLI las necesidades prioritarias antes de coordinar tu aporte.</p>
+          <h3 className="mt-4 font-bold">Recursos necesarios:</h3><EmergencyResources emergency={item} />
           <div className="mt-5 flex flex-wrap gap-3"><Link to="/solicitud?tipo=OFERTA_RECURSO" className="rounded-xl bg-[#ef5700] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#d54d00]">Ofrecer ayuda</Link>{markers.some((marker) => marker.id === item.id) && <button type="button" onClick={() => setSelectedId(item.id)} aria-pressed={selectedId === item.id} className="rounded-xl bg-orange-50 px-4 py-2.5 text-sm font-semibold text-[#ad4200] transition hover:bg-orange-100">Ver ubicación</button>}</div>
         </article>)}
       </div>

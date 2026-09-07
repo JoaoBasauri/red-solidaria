@@ -28,6 +28,19 @@ El bucket es privado. La carga desde formularios anonimos debe pasar por una Edg
 
 ## Aplicacion
 
+### Foto y recursos de emergencias
+
+Aplicar en orden `20260906000100_foto_emergencia.sql` y
+`20260907000100_recursos_emergencia.sql` antes de usar el nuevo formulario de aprobación.
+Solo ADMIN/GESTOR puede publicar. Foto y recursos se guardan junto con la aprobación
+en una transacción; las evidencias originales permanecen privadas. Los registros
+anteriores sin estos datos muestran un aviso de pendiente de publicación.
+
+Verificar en un entorno de pruebas: aprobación con foto y recursos, rechazo sin
+recursos o sin foto, denegación a perfiles LECTURA/anónimos, y visualización de la
+misma foto y lista en Emergencias y Reporta. El almacenamiento solo permite lectura
+pública de la foto vinculada a una emergencia actualmente aprobada.
+
 Antes de aplicar estas migraciones a una base con estructuras existentes, obtener un `db dump` o ejecutar `supabase db pull` con acceso autenticado. Luego revisar colisiones con `profiles`, `requests`, funciones y politicas antiguas.
 
 En un proyecto Supabase enlazado:

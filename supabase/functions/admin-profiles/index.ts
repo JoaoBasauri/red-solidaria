@@ -1,4 +1,5 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { passwordRedirect } from '../_shared/app-url.mjs'
 
 const cors={
   'Access-Control-Allow-Origin':'*',
@@ -41,7 +42,7 @@ Deno.serve(async request=>{
       const role=String(body.rol||'GESTOR')
       if(!email.includes('@')||name.length<2||!roles.has(role))return json({error:'Datos del perfil inválidos.'},400)
       const {data:created,error:createError}=await admin.auth.admin.inviteUserByEmail(email,{
-        data:{full_name:name},redirectTo:String(body.redirectTo||''),
+        data:{full_name:name},redirectTo:passwordRedirect(Deno.env.get('APP_BASE_URL')),
       })
       if(createError)throw createError
       const {data:profile,error:profileError}=await admin.from('profiles').upsert({id:created.user.id,nombre_completo:name,rol:role,activo:true}).select().single()

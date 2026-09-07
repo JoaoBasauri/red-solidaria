@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { passwordRedirect } from '../../supabase/functions/_shared/app-url.mjs'
 import { supabase } from '../lib/supabase'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -16,12 +17,15 @@ function Login() {
     setRecoverySent(false)
     if (!email) { setMessage('Ingresa tu correo para enviarte el enlace de recuperación.'); return }
     setLoading(true); setMessage('')
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/actualizar-contrasena`,
-    })
-    setLoading(false)
-    setRecoverySent(!error)
-    setMessage(error ? error.message : 'Te enviamos un enlace de recuperación. Revisa también la carpeta de spam.')
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: passwordRedirect(import.meta.env.VITE_APP_BASE_URL),
+      })
+      if (error) throw error
+      setRecoverySent(true)
+      setMessage('Te enviamos un enlace de recuperación. Revisa también la carpeta de spam.')
+    } catch (error) { setMessage(error.message) }
+    finally { setLoading(false) }
   }
 
   async function handleSubmit(e) {

@@ -1,4 +1,5 @@
 import EmergencyPhoto from "../components/EmergencyPhoto";
+import EmergencyResources from "../components/EmergencyResources";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import PublicLayout from "../components/PublicLayout";
@@ -85,7 +86,7 @@ export default function Report() {
       <div className="mx-auto mt-16 grid max-w-[70rem] gap-8 md:grid-cols-2 lg:gap-14">
         {emergencies.map((item) => <article key={item.id} className="rounded-[1.25rem] border border-[#e0cbe8] bg-white p-6 shadow-[0_3px_8px_#0003] sm:p-8">
           <div className="grid items-center gap-5 sm:grid-cols-[.9fr_1fr]"><EmergencyPhoto emergency={item} /><div><span className="rounded-full bg-[#f44080] px-3 py-0.5 font-bold text-white">ACTIVA</span>{item.es_demo && <span className="ml-2 text-xs font-bold text-slate-500">Demo</span>}<h3 className="mt-2 text-lg font-bold">{item.titulo}</h3><p>{[item.distrito, item.provincia].filter(Boolean).join(" · ") || "Ubicación por confirmar"}</p><p>{item.poblacion_afectada != null ? `${new Intl.NumberFormat("es-PE").format(item.poblacion_afectada)} personas afectadas` : "Población afectada por confirmar"}</p></div></div>
-          <h4 className="mt-5 font-bold">Recursos necesarios:</h4><p className="mt-1 text-sm leading-6">Consulta con OLI las necesidades prioritarias antes de coordinar tu aporte.</p>
+          <h4 className="mt-5 font-bold">Recursos necesarios:</h4><EmergencyResources emergency={item} />
           <div className="mt-5 grid gap-3 sm:grid-cols-2"><Link to="/solicitud?tipo=OFERTA_RECURSO" className={`${gradient} rounded-2xl px-3 py-3 text-center font-bold text-white transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-purple-700`}>Quiero donar</Link><Link to="/solicitud?tipo=VOLUNTARIO" className="rounded-2xl border border-[#702780] px-3 py-3 text-center font-bold text-[#702780] transition hover:bg-purple-50">Quiero ser voluntario</Link></div>
         </article>)}
       </div>

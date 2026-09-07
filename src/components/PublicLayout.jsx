@@ -286,9 +286,9 @@ export default function PublicLayout({ children }) {
             )}
             <Link
               to="/solicitud"
-              className="hidden rounded-2xl bg-[#99288d] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#7f1e76] sm:block"
+              className="hidden rounded-2xl bg-[#ef5b16] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#d94f0b] sm:block"
             >
-              Solicitar apoyo
+              Súmate
             </Link>
             <button
               type="button"

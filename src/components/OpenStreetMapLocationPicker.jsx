@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import catalog from '../data/ubigeo.json'
+import { mapAddress } from '../utils/mapAddress.mjs'
 
 let leafletPromise
 
@@ -29,13 +31,13 @@ function OpenStreetMapLocationPicker({ value, onChange }) {
   useEffect(() => { onChangeRef.current = onChange }, [onChange])
 
   useEffect(() => {
-    let active = true, reverseTimer
+    let active = true, reverseTimer, map, selection = 0
     loadLeaflet().then((L) => {
       if (!active || !container.current) return
       const initial = initialValue.current.latitude
         ? [Number(initialValue.current.latitude), Number(initialValue.current.longitude)]
         : [-12.0464, -77.0428]
-      const map = L.map(container.current).setView(initial, initialValue.current.latitude ? 17 : 6)
+      map = L.map(container.current).setView(initial, initialValue.current.latitude ? 17 : 6)
       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -43,27 +45,35 @@ function OpenStreetMapLocationPicker({ value, onChange }) {
       const marker = L.marker(initial, { draggable: true }).addTo(map)
 
       function select(latlng) {
+        const currentSelection = ++selection
         marker.setLatLng(latlng)
         map.panTo(latlng)
         const coordinates = { latitude: latlng.lat.toFixed(6), longitude: latlng.lng.toFixed(6) }
-        onChangeRef.current({ ...coordinates, address: '' })
+        setError('')
+        onChangeRef.current({ ...coordinates, address: '', region: '', province: '', district: '' })
         clearTimeout(reverseTimer)
         reverseTimer = setTimeout(async () => {
           try {
             const url = new URL('https://nominatim.openstreetmap.org/reverse')
             url.search = new URLSearchParams({ format:'jsonv2', lat:String(latlng.lat), lon:String(latlng.lng), zoom:'18', addressdetails:'1' })
             const response = await fetch(url, { headers: { 'Accept-Language': 'es' } })
-            if (!response.ok) return
+            if (!response.ok) throw new Error('No se pudo consultar la ubicación.')
             const result = await response.json()
-            if (active) onChangeRef.current({ ...coordinates, address: result.display_name || '' })
-          } catch { /* la seleccion sigue siendo valida con coordenadas */ }
+            if (active && currentSelection === selection) {
+              const location = mapAddress(result, catalog)
+              onChangeRef.current({ ...coordinates, ...location })
+              if (!location.region || !location.province || !location.district) setError('El mapa no identificó todos los campos. Completa o corrige la región, provincia y distrito manualmente.')
+            }
+          } catch {
+            if (active && currentSelection === selection) setError('No se pudieron completar los datos de ubicación. Puedes ingresarlos manualmente o volver a seleccionar el punto.')
+          }
         }, 1000)
       }
 
       map.on('click', ({ latlng }) => select(latlng))
       marker.on('dragend', () => select(marker.getLatLng()))
     }).catch((cause) => active && setError(cause.message))
-    return () => { active = false; clearTimeout(reverseTimer) }
+    return () => { active = false; clearTimeout(reverseTimer); map?.remove() }
   }, [])
 
   return <div><div ref={container} className="h-80 w-full rounded-lg border bg-slate-200" aria-label="Selecciona la ubicación en OpenStreetMap" />{error&&<p className="mt-2 text-sm text-red-700">{error}</p>}{value.latitude&&<p className="mt-3 text-sm text-slate-600">Ubicación seleccionada: {value.latitude}, {value.longitude}</p>}</div>
