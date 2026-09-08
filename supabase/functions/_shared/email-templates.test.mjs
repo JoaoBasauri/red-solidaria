@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 test('membrete público en confirmaciones y cambios de estado', () => {
   for (const type of ['solicitud_recibida', 'cambio_estado']) {
     const { html } = renderEmail(type, { codigo: 'RS-PRUEBA' });
-    assert.match(html, /https:\/\/red-solidaria-eta\.vercel\.app\/membrete-correo\.png/);
+    assert.match(html, /https:\/\/redsolidaria\.olifoundation\.org\/membrete-correo\.png/);
     assert.ok(html.indexOf('<img ') < html.indexOf('<h1 '));
     assert.match(html, /height:auto/);
   }
