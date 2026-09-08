@@ -232,22 +232,22 @@ export default function Respond() {
             Incorporamos elementos específicos para:
           </p>
           <div className="mt-8 grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
-            <div className="relative mx-auto w-full max-w-[36.5rem]">
+            <div className="mx-auto flex w-full max-w-[18rem] flex-col items-center sm:max-w-[21rem] lg:max-w-[24rem]">
               <img
                 src={`${A}/responde-ilustracion.png`}
                 alt="Kit de emergencia de Red Solidaria"
                 loading="lazy"
-                className="max-h-max w-full"
+                className="block h-auto w-full object-contain"
               />
               <button
                 type="button"
                 onClick={() => kitDialog.current?.showModal()}
-                className="absolute right-[1%] top-[53%] flex h-[24%] w-[29%] flex-col items-center justify-center rounded-[1.5rem] text-sm font-bold text-white transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#073164] sm:text-xl"
+                className="mt-5 inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#073164] px-6 py-3 text-base font-bold text-white transition hover:bg-[#20588a] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#073164]"
               >
                 <img
                   src={`${A}/responde-ver.png`}
                   alt=""
-                  className="mb-1 h-5 w-6 object-contain brightness-0 invert"
+                  className="h-5 w-6 shrink-0 object-contain brightness-0 invert"
                 />
                 Ver kit aquí
               </button>
