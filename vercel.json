@@ -42,6 +42,8 @@
     }
   ],
   "rewrites": [
+    { "source": "/oli/emergencias", "destination": "/_seo/oli/emergencias.html" },
+    { "source": "/oli/puntos-acopio", "destination": "/_seo/oli/puntos-acopio.html" },
     {
       "source": "/nosotros",
       "destination": "/_seo/nosotros.html"

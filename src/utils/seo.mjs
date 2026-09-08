@@ -19,6 +19,8 @@ export const privatePages = {
   '/oli': 'Panel OLI',
   '/oli/perfiles': 'Perfiles OLI',
   '/oli/voluntarios': 'Voluntarios',
+  '/oli/emergencias': 'Gestionar emergencias',
+  '/oli/puntos-acopio': 'Gestionar puntos de acopio',
 }
 
 export function siteOrigin(value = defaultSiteUrl) {

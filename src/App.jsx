@@ -16,6 +16,7 @@ import ProfileSettings from './pages/Oli/ProfileSettings'
 import Volunteers from './pages/Oli/Volunteers'
 import CollectionPoints from './pages/CollectionPoints'
 import Seo from './components/Seo'
+import Publications from './pages/Oli/Publications'
 
 function App() {
   return (
@@ -23,6 +24,8 @@ function App() {
       <Seo />
       <RecoveryRedirect />
       <Routes>
+        <Route path="/oli/emergencias" element={<ProtectedRoute><Publications key="emergencias" type="EMERGENCIA" /></ProtectedRoute>} />
+        <Route path="/oli/puntos-acopio" element={<ProtectedRoute><Publications key="puntos" type="PUNTO_ACOPIO" /></ProtectedRoute>} />
 
         <Route
           path="/"
