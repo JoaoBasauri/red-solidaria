@@ -3,7 +3,101 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "headers": [
+    {
+      "source": "/oli/:path*",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/login",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, follow"
+        }
+      ]
+    },
+    {
+      "source": "/actualizar-contrasena",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, follow"
+        }
+      ]
+    },
+    {
+      "source": "/solicitud",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, follow"
+        }
+      ]
+    }
+  ],
   "rewrites": [
+    {
+      "source": "/nosotros",
+      "destination": "/_seo/nosotros.html"
+    },
+    {
+      "source": "/responde",
+      "destination": "/_seo/responde.html"
+    },
+    {
+      "source": "/articula",
+      "destination": "/_seo/articula.html"
+    },
+    {
+      "source": "/conecta",
+      "destination": "/_seo/conecta.html"
+    },
+    {
+      "source": "/emergencias",
+      "destination": "/_seo/emergencias.html"
+    },
+    {
+      "source": "/puntos-acopio",
+      "destination": "/_seo/puntos-acopio.html"
+    },
+    {
+      "source": "/reporta",
+      "destination": "/_seo/reporta.html"
+    },
+    {
+      "source": "/faq",
+      "destination": "/_seo/faq.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/_seo/login.html"
+    },
+    {
+      "source": "/actualizar-contrasena",
+      "destination": "/_seo/actualizar-contrasena.html"
+    },
+    {
+      "source": "/solicitud",
+      "destination": "/_seo/solicitud.html"
+    },
+    {
+      "source": "/oli",
+      "destination": "/_seo/oli.html"
+    },
+    {
+      "source": "/oli/perfiles",
+      "destination": "/_seo/oli/perfiles.html"
+    },
+    {
+      "source": "/oli/voluntarios",
+      "destination": "/_seo/oli/voluntarios.html"
+    },
     {
       "source": "/(.*)",
       "destination": "/index.html"

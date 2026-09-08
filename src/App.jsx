@@ -15,10 +15,12 @@ import UpdatePassword from './pages/UpdatePassword'
 import ProfileSettings from './pages/Oli/ProfileSettings'
 import Volunteers from './pages/Oli/Volunteers'
 import CollectionPoints from './pages/CollectionPoints'
+import Seo from './components/Seo'
 
 function App() {
   return (
     <BrowserRouter>
+      <Seo />
       <RecoveryRedirect />
       <Routes>
 
