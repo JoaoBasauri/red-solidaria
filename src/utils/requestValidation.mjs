@@ -8,7 +8,6 @@ export const fields = {
     ['necesidades_urgentes','Principales necesidades identificadas','text',true],
   ],
   KIT: [
-    ['tipo_kit','Tipo de kit','text',true],
     ['cantidad_solicitada','Cantidad de kits','number',true,{min:1}],
     ['poblacion_beneficiaria','Personas beneficiarias','number',true,{min:1}],
     ['fecha_necesidad','Fecha en que se necesitan','date',true],

@@ -12,6 +12,14 @@ for (const type of Object.keys(fields)) test(`${type}: acepta formulario complet
   const f=form(type);assert.doesNotThrow(()=>validateRequest(f));
   for(const [key,,,required] of requestFields(type, f.details)) if(required) assert.throws(()=>validateRequest({...f,details:{...f.details,[key]:'   '}}));
 });
+test('KIT no solicita tipo de kit ni asunto y valida sin ambos',()=>{
+  const f=form('KIT');
+  assert.ok(!requestFields('KIT').some(([name])=>name==='tipo_kit'));
+  assert.equal(f.details.tipo_kit, undefined);
+  assert.equal(f.subject, undefined);
+  assert.doesNotThrow(()=>validateRequest(f));
+});
+
 test('rechaza cantidad cero y acepta decimales válidos',()=>{
   const f=form('OFERTA_RECURSO');
   for(const cantidad of ['0','-1','NaN','0.001']) assert.throws(()=>validateRequest({...f,details:{...f.details,cantidad}}));

@@ -12,7 +12,6 @@ export const options = {
   unidad: ['Unidades', 'Kits', 'Cajas', 'Kilogramos', 'Toneladas', 'Litros', 'Metros cúbicos', 'Horas', 'Viajes', 'Soles', 'Otros'],
   disponibilidad: ['Mañanas', 'Tardes', 'Noches', 'Fines de semana', 'Tiempo completo', 'Según coordinación'],
   habilidades: ['Logística', 'Transporte', 'Salud', 'Primeros auxilios', 'Comunicaciones', 'Trabajo comunitario', 'Administración', 'Apoyo técnico', 'Preparación de kits', 'Otros'],
-  tipo_kit: ['Kit familiar de emergencia', 'Kit de higiene', 'Kit de alimentos', 'Otros'],
   acopio_abierto_publico: ['Sí', 'No'],
 }
 export const multiFields = ['necesidades_urgentes', 'tipo_aliado', 'disponibilidad', 'habilidades']

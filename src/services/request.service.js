@@ -38,7 +38,7 @@ export async function createPublicRequest(form) {
     p_nombre: form.name,
     p_email: form.email,
     p_telefono: form.phone || null,
-    p_asunto: form.subject || null,
+    p_asunto: null,
     p_descripcion: form.description,
     p_region: form.region || null,
     p_provincia: form.province || null,

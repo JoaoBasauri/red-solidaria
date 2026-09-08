@@ -228,7 +228,7 @@ export default function Articulate() {
             src={`${A}/articula-hero.webp`}
             alt="Voluntarias entregando recursos a una comunidad"
             loading="lazy"
-            className="aspect-[1.65] w-full rounded-[1.25rem] object-cover"
+            className="aspect-[1.65] h-full rounded-[1.25rem] object-cover"
           />
         </div>
       </section>

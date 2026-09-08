@@ -7,7 +7,8 @@ test('membrete público en confirmaciones y cambios de estado', () => {
   for (const type of ['solicitud_recibida', 'cambio_estado']) {
     const { html } = renderEmail(type, { codigo: 'RS-PRUEBA' });
     assert.match(html, /https:\/\/redsolidaria\.olifoundation\.org\/membrete-correo\.png/);
-    assert.ok(html.indexOf('<img ') < html.indexOf('<h1 '));
+    assert.ok(html.indexOf('<img ') > html.lastIndexOf('</p>'));
+    assert.equal((html.match(/membrete-correo\.png/g) || []).length, 1);
     assert.match(html, /height:auto/);
   }
 });
@@ -16,6 +17,8 @@ test('plantillas de acceso conservan tokens y muestran el membrete', () => {
   for (const name of ['confirmation', 'email-change', 'invite', 'magic-link', 'reauthentication', 'recovery']) {
     const html = readFileSync(new URL('../../templates/' + name + '.html', import.meta.url), 'utf8');
     assert.match(html, /membrete-correo\.png/);
+    assert.ok(html.indexOf('<img') > html.lastIndexOf('</p>'));
+    assert.equal((html.match(/membrete-correo\.png/g) || []).length, 1);
     assert.ok(html.includes(name === 'reauthentication' ? '{{ .Token }}' : '{{ .ConfirmationURL }}'));
   }
 });
