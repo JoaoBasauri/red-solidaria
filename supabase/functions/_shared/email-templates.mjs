@@ -17,6 +17,23 @@ const states = {
   CANCELADA: "Cancelada",
 };
 const fields = {
+  situacion_emergencia: "Situación de la emergencia",
+  hora_emergencia: "Hora de la emergencia (Perú)",
+  familias_afectadas: "Familias afectadas",
+  organizacion_contacto: "Organización de contacto en territorio",
+  persona_contacto: "Persona de contacto en territorio",
+  correo_contacto: "Correo de contacto en territorio",
+  telefono_contacto: "Teléfono de contacto en territorio",
+  enlace_evidencia: "Enlace de respaldo",
+  tipo_participante: "Tipo de participante",
+  clasificacion: "Clasificación de la organización",
+  region_entrega: "Región de entrega",
+  plazo_entrega: "Plazo de entrega",
+  emergencia_interes_nombre: "Emergencia en la que desea participar",
+  acopio_abierto_publico: "Establecimiento abierto al público",
+  acopio_direccion: "Dirección del punto de acopio",
+  acopio_referencia: "Referencia del punto de acopio",
+  acopio_horarios: "Horarios del punto de acopio",
   tipo_emergencia: "Tipo de emergencia",
   fecha_emergencia: "Fecha de la emergencia",
   poblacion_afectada: "Personas afectadas",
@@ -98,6 +115,6 @@ export function renderEmail(template, data = {}) {
       ...rows.map(([key, value]) => `${key}: ${value}`),
       footer,
     ].join("\n\n"),
-    html: `<html lang="es"><body style="font-family:Arial,sans-serif;color:#073164;line-height:1.6"><main style="max-width:640px;margin:auto;padding:24px"><h1 style="color:#ef5700">${title}</h1><p>${escape(greeting)}</p><p>${intro}</p><table style="width:100%;border-collapse:collapse">${rows.map(([key, value]) => `<tr><th style="padding:10px;text-align:left;vertical-align:top;border-bottom:1px solid #ddd">${key}</th><td style="padding:10px;white-space:pre-wrap;overflow-wrap:anywhere;border-bottom:1px solid #ddd">${escape(value)}</td></tr>`).join("")}</table><p>${escape(footer).replaceAll("\n", "<br>")}</p></main></body></html>`,
+    html: `<html lang="es"><body style="font-family:Arial,sans-serif;color:#073164;line-height:1.6"><main style="max-width:640px;margin:auto;padding:24px"><img src="https://red-solidaria-eta.vercel.app/membrete-correo.png" width="600" height="200" alt="Red Solidaria · La plataforma de emergencia de Fundación OLI" style="display:block;width:100%;max-width:600px;height:auto;border:0;margin:0 auto 24px;" /><h1 style="color:#ef5700">${title}</h1><p>${escape(greeting)}</p><p>${intro}</p><table style="width:100%;border-collapse:collapse">${rows.map(([key, value]) => `<tr><th style="padding:10px;text-align:left;vertical-align:top;border-bottom:1px solid #ddd">${key}</th><td style="padding:10px;white-space:pre-wrap;overflow-wrap:anywhere;border-bottom:1px solid #ddd">${escape(value)}</td></tr>`).join("")}</table><p>${escape(footer).replaceAll("\n", "<br>")}</p></main></body></html>`,
   };
 }

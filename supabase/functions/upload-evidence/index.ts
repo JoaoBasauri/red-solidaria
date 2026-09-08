@@ -4,7 +4,7 @@ const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
-const allowed = new Set(['image/jpeg','image/png','image/webp','application/pdf'])
+const allowed = new Set(['image/jpeg','image/png','image/webp','application/pdf','video/mp4','video/webm'])
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: cors })
@@ -24,7 +24,7 @@ Deno.serve(async (request) => {
     const file = form.get('file')
     if (!(file instanceof File) || !solicitudId || !codigo) return json({ error: 'Solicitud o archivo inválido.' }, 400)
     if (!allowed.has(file.type)) return json({ error: 'Tipo de archivo no permitido.' }, 400)
-    const limit = file.type === 'application/pdf' ? 10 * 1024 * 1024 : 5 * 1024 * 1024
+    const limit = file.type === 'application/pdf' || file.type.startsWith('video/') ? 10 * 1024 * 1024 : 5 * 1024 * 1024
     if (file.size <= 0 || file.size > limit) return json({ error: 'El archivo supera el tamaño permitido.' }, 400)
 
     const { data: solicitud } = await client.from('solicitudes').select('id,tipo,created_at')
@@ -51,4 +51,3 @@ Deno.serve(async (request) => {
 function json(body: Record<string, unknown>, status: number) {
   return new Response(JSON.stringify(body), { status, headers:{ ...cors,'Content-Type':'application/json' } })
 }
-

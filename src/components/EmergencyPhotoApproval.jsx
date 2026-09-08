@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { publishEmergencyPhoto } from '../services/request.service';
+import FileUploadButton from './FileUploadButton';
 
 export default function EmergencyPhotoApproval({ request, approve = false, observation = '', onSaved }) {
   const [file, setFile] = useState(null);
@@ -11,8 +12,8 @@ export default function EmergencyPhotoApproval({ request, approve = false, obser
   const resources = [...new Set(resourcesText.split('\n').map(value => value.trim()).filter(Boolean))];
   const validResources = resources.length > 0 && resources.length <= 20 && resources.every(value => value.length <= 150);
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
-  function chooseFile(e) {
-    const selected = e.target.files?.[0] || null;
+  function chooseFile(files) {
+    const selected = files[0] || null;
     setFile(selected);
     setPreview(selected ? URL.createObjectURL(selected) : '');
     setConfirmed(false); setError('');
@@ -25,8 +26,9 @@ export default function EmergencyPhotoApproval({ request, approve = false, obser
     finally { setBusy(false); }
   }
   return <div className="col-span-full grid gap-3 rounded-xl border border-purple-200 bg-purple-50 p-4">
-    <label className="font-semibold">Foto pública de esta emergencia<input disabled={busy} type="file" accept="image/jpeg,image/png,image/webp" className="mt-2 block w-full text-sm" onChange={chooseFile} /></label>
-    <p className="text-sm text-slate-600">JPG, PNG o WebP, máximo 5 MB. Se mostrará en las tarjetas públicas. Las evidencias del solicitante permanecen privadas.</p>
+    <p className="font-semibold">Foto pública de esta emergencia</p>
+    <FileUploadButton disabled={busy} accept="image/jpeg,image/png,image/webp" onSelect={chooseFile} label={file ? 'Cambiar fotografía' : 'Seleccionar fotografía'} description="JPG, PNG o WebP, máximo 5 MB. Se mostrará en las tarjetas públicas. Las evidencias del solicitante permanecen privadas." />
+    {file && <p className="break-all text-sm text-slate-700" aria-live="polite">{file.name}</p>}
     {file && preview && <img src={preview} alt="Vista previa de la foto que se publicará" className="max-h-56 rounded-xl object-contain" />}
     <label className="font-semibold">Recursos necesarios (obligatorio)<textarea disabled={busy} value={resourcesText} onChange={e => { setResourcesText(e.target.value); setConfirmed(false); }} rows={4} maxLength={3020} placeholder={'Agua potable: 100 litros\nFrazadas: 50 unidades\nKits de alimentos: 30 unidades'} className="mt-2 block w-full rounded-lg border p-3 text-sm font-normal" aria-describedby="recursos-ayuda" /></label>
     <p id="recursos-ayuda" className="text-sm text-slate-600">Ingresa un recurso por línea, con cantidad y unidad cuando corresponda. Máximo 20 recursos y 150 caracteres por recurso. Esta información será pública.</p>

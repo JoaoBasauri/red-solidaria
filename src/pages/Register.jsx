@@ -6,6 +6,8 @@ import RequestTypeFields from '../components/RequestTypeFields'
 import EvidencePicker from '../components/EvidencePicker'
 import LocationDropdowns from '../components/LocationDropdowns'
 import PublicLayout from '../components/PublicLayout'
+import StyledSelect from '../components/StyledSelect'
+import { requestFields } from '../utils/requestValidation.mjs'
 
 const empty = { type:'EMERGENCIA',name:'',email:'',phone:'',subject:'',description:'',region:'',province:'',district:'',address:'',latitude:'',longitude:'',consent:false,details:{} }
 
@@ -21,7 +23,14 @@ function Register() {
   const point = form.type === 'PUNTO_ACOPIO'
   const needsMap = point || form.type === 'EMERGENCIA'
   const update = ({ target }) => { if (target.name === 'type') setFiles([]); setForm((v) => ({...v,[target.name]:target.type==='checkbox'?target.checked:target.value,...(target.name==='type'?{details:{},region:'',province:'',district:'',address:'',latitude:'',longitude:''}:{})})); }
-  const updateDetails = ({ target }) => setForm((v) => ({...v,details:{...v.details,[target.name]:target.value}}))
+  const updateDetails = ({ target }) => setForm((v) => {
+    const details = {...v.details,[target.name]:target.value}
+    if (['tipo_participante', 'tipo_aliado'].includes(target.name)) {
+      const visible = new Set(requestFields(v.type, details).map(([name]) => name))
+      for (const key of Object.keys(details)) if (!visible.has(key) && !['confirmacion_veracidad', 'emergencia_interes_nombre'].includes(key)) delete details[key]
+    }
+    return {...v,details}
+  })
   useEffect(()=>{isEvidenceUploadEnabled().then(setEvidenceEnabled)},[])
 
   async function submit(e) {
@@ -43,12 +52,11 @@ function Register() {
     <section className="mx-auto max-w-7xl px-5 pb-10 pt-16 text-[#073164] sm:px-8"><h1 className="text-4xl font-bold sm:text-5xl">Enviar una solicitud</h1><p className="mt-3 text-lg">No necesitas crear una cuenta. Te informaremos por correo.</p></section>
     {/* Sección: formulario público para registrar una solicitud. */}
     <section className="bg-white px-5 pb-20 sm:px-8"><form onSubmit={submit} className="mx-auto max-w-7xl rounded-[1.5rem] bg-white p-6 shadow-[0_3px_10px_#0002] sm:p-12 lg:p-20">
-    <label className="block text-2xl font-bold text-[#073164]">Tipo<select name="type" value={form.type} onChange={update} className="mt-4 w-full rounded-xl border border-blue-300 bg-white p-4 text-lg font-bold outline-none focus:border-[#ef5b16] focus:ring-4 focus:ring-orange-100">{REQUEST_TYPES.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>
+    <StyledSelect label="Tipo de solicitud" value={form.type} options={REQUEST_TYPES.map(([value,label])=>({value,label}))} onChange={value=>update({target:{name:'type',value}})} />
     <div className="mt-4 grid gap-4 sm:grid-cols-2">
-      <Field label="Nombre completo" name="name" minLength={2} value={form.name} onChange={update} required/><Field label="Correo" name="email" type="email" value={form.email} onChange={update} required/>
-      <Field label="Teléfono" name="phone" value={form.phone} onChange={update}/><Field label="Asunto" name="subject" value={form.subject} onChange={update}/>
-      {needsMap ? <><Field label="Región" name="region" value={form.region} onChange={update}/><Field label="Provincia" name="province" value={form.province} onChange={update}/>
-      <Field label="Distrito" name="district" value={form.district} onChange={update}/></> : <LocationDropdowns value={form} onChange={changes=>setForm(v=>({...v,...changes}))}/>}<Field label="Dirección" name="address" value={form.address} onChange={update} required={point}/>
+      <Field label="Nombre completo de la persona de contacto" name="name" minLength={2} value={form.name} onChange={update} required/><Field label="Correo de contacto" name="email" type="email" value={form.email} onChange={update} required/>
+      <Field label="Teléfono de contacto" name="phone" type="tel" value={form.phone} onChange={update} required/><Field label="Asunto" name="subject" value={form.subject} onChange={update}/>
+      <LocationDropdowns value={form} onChange={changes=>setForm(v=>({...v,...changes}))}/><Field label="Dirección" name="address" value={form.address} onChange={update} required={point}/>
     </div>
     <RequestTypeFields type={form.type} values={form.details} onChange={updateDetails}/>
     {evidenceEnabled && ['EMERGENCIA','KIT'].includes(form.type) && <EvidencePicker files={files} onChange={setFiles}/>} 

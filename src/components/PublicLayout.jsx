@@ -163,7 +163,7 @@ function PillarsMenu() {
             />
           </svg>
         </span>{" "}
-        Pilares de red
+        Pilares
       </button>
       {open && (
         <div className="absolute left-0 top-full z-50 w-40 rounded-xl bg-white py-2 shadow-xl">

@@ -1,9 +1,11 @@
+import { extraFields, multiFields, options, visibleField } from './requestOptions.mjs'
+
 export const fields = {
   EMERGENCIA: [
     ['tipo_emergencia','Tipo de emergencia','text',true],
     ['fecha_emergencia','Fecha de la emergencia','date',true],
     ['poblacion_afectada','Personas afectadas','number',true,{min:1}],
-    ['necesidades_urgentes','Necesidades urgentes','text',false],
+    ['necesidades_urgentes','Principales necesidades identificadas','text',true],
   ],
   KIT: [
     ['tipo_kit','Tipo de kit','text',true],
@@ -44,20 +46,36 @@ export const fields = {
   ],
 }
 
+export function requestFields(type, values = {}) {
+  return [...(fields[type] || []), ...(extraFields[type] || [])].filter(([name]) => visibleField(name, values))
+}
+
 export function validateRequest(form) {
   if (!fields[form.type]) throw new Error('Tipo de solicitud inválido.');
   if ((form.name || '').trim().length < 2) throw new Error('El nombre debe tener al menos 2 caracteres.');
   if ((form.description || '').trim().length < 5) throw new Error('La descripción debe tener al menos 5 caracteres.');
   if (!form.consent) throw new Error('Debes autorizar el tratamiento de tus datos.');
+  if (!(form.phone || '').trim()) throw new Error('Ingresa un teléfono de contacto.');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email || '')) throw new Error('Ingresa un correo válido.');
   const d = form.details || {};
-  for (const [name, label, type, required] of fields[form.type]) {
+  for (const [name, label, type, required] of requestFields(form.type, d)) {
     const value = d[name];
     if (value == null || String(value).trim() === '') { if (required) throw new Error(`Completa: ${label}.`); continue; }
     if (type === 'number' && (!Number.isFinite(Number(value)) || Number(value) <= 0 || (name !== 'cantidad' && !Number.isInteger(Number(value))))) throw new Error(`${label}: ingresa un número positivo${name !== 'cantidad' ? ' entero' : ''}.`);
     if (name === 'cantidad' && Number(value) < 0.01) throw new Error('La cantidad mínima es 0.01.');
+    if (options[name]) {
+      const selected = multiFields.includes(name) ? String(value).split('; ') : [value];
+      if (selected.some(item => !options[name].includes(item))) throw new Error(`${label}: selecciona una opción válida.`);
+    }
+    if (name === 'dni' && !/^\d{8}$/.test(value)) throw new Error('El DNI debe tener 8 dígitos.');
+    if (name === 'edad' && Number(value) > 120) throw new Error('Ingresa una edad válida.');
+    if (type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) throw new Error(`${label}: correo inválido.`);
+    if (type === 'time' && !/^([01]\d|2[0-3]):[0-5]\d$/.test(value)) throw new Error('Ingresa una hora válida.');
+    if (type === 'url') { try { if (!['http:', 'https:'].includes(new URL(value).protocol)) throw new Error(); } catch { throw new Error(`${label}: usa un enlace HTTP o HTTPS válido.`); } }
     if (type === 'date' && (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(Date.parse(value)) || new Date(value).toISOString().slice(0,10) !== value)) throw new Error(`${label}: fecha inválida.`);
   }
+  if (!form.region || !form.province || !form.district) throw new Error('Selecciona región, provincia y distrito.');
+  if (['ALIADO', 'OFERTA_RECURSO', 'VOLUNTARIO'].includes(form.type) && !d.confirmacion_veracidad) throw new Error('Confirma que la información es verdadera.');
   for (const [start,end] of [['disponibilidad_desde','disponibilidad_hasta'],['fecha_inicio','fecha_fin']]) {
     if (d[start] && d[end] && d[end] < d[start]) throw new Error('La fecha final no puede ser anterior a la fecha inicial.');
   }

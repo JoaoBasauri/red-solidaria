@@ -46,7 +46,7 @@ export async function createPublicRequest(form) {
     p_direccion: form.address || null,
     p_latitud: form.latitude === "" ? null : Number(form.latitude),
     p_longitud: form.longitude === "" ? null : Number(form.longitude),
-    p_datos: form.details || {},
+    p_datos: { ...form.details, ...(form.type === 'ALIADO' && form.details?.tipo_participante === 'Persona' ? { nombre_organizacion: form.name } : {}) },
     p_consentimiento: form.consent,
   });
   if (error) throw error;

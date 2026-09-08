@@ -51,7 +51,8 @@ function Stat({label,value}){return <div className="rounded-xl bg-white p-5 shad
 
 function Detail({request,workers,canManage,onClose,onStatus,onAssign,onPublish}){
  const [next,setNext]=useState(''),[note,setNote]=useState(''),[contact,setContact]=useState('')
- const detail=request[relations[request.tipo]], transitions=ALLOWED_TRANSITIONS[request.estado]||[]
+ const relational=request[relations[request.tipo]]
+ const detail={...(Array.isArray(relational)?relational[0]:relational),...request.datos}, transitions=ALLOWED_TRANSITIONS[request.estado]||[]
  return <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 p-3 sm:p-8"><article className="ml-auto min-h-full max-w-3xl rounded-2xl bg-white p-5 shadow-xl sm:p-8"><div className="flex justify-between gap-4"><div><span className="font-mono text-blue-700">{request.codigo}</span><h2 className="text-2xl font-bold">{labels[request.tipo]}</h2><div className="mt-2"><StatusBadge status={request.estado}/></div></div><button onClick={onClose} className="h-10 rounded-lg border px-4">Cerrar</button></div>
  <Section title="Solicitante"><Data label="Nombre" value={request.nombre_solicitante}/><Data label="Correo" value={request.email_solicitante}/><Data label="Teléfono" value={request.telefono_solicitante}/></Section>
  <Section title="Solicitud"><Data label="Asunto" value={request.asunto}/><Data label="Descripción" value={request.descripcion}/><Data label="Prioridad" value={request.prioridad}/><Data label="Ubicación" value={[request.direccion,request.distrito,request.provincia,request.region].filter(Boolean).join(', ')}/>{request.latitud!=null&&<a target="_blank" rel="noreferrer" className="text-blue-700 underline" href={`https://www.openstreetmap.org/?mlat=${request.latitud}&mlon=${request.longitud}#map=17/${request.latitud}/${request.longitud}`}>Abrir ubicación en el mapa</a>}</Section>
