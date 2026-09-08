@@ -505,14 +505,14 @@ export function PageHero({
           <img
             src={image}
             alt=""
-            className={`absolute inset-0 h-full w-full object-cover ${focusActors ? "object-[50%_35%]" : "object-center"}`}
+            className={`absolute inset-0 h-full w-full object-cover ${focusActors ? "object-[50%_65%]" : "object-center"}`}
           />
           <div
             className={`absolute inset-0 bg-gradient-to-r ${focusActors ? "from-black/80 via-black/30 to-black/5" : "from-black/75 via-black/45 to-transparent"}`}
           />
         </>
       )}
-      <div className="relative mx-auto grid min-h-[32rem] max-w-7xl items-center gap-8 px-4 py-16 sm:px-6 lg:grid-cols-[1.3fr_.7fr] lg:px-8">
+      <div className={`relative mx-auto grid max-w-7xl gap-8 px-4 py-16 sm:px-6 lg:grid-cols-[1.3fr_.7fr] lg:px-8 ${focusActors ? "min-h-[44rem] items-start sm:min-h-[46rem] lg:min-h-[48rem]" : "min-h-[32rem] items-center"}`}>
         <div>
           <p className="text-sm font-black uppercase tracking-[.18em] text-white/75">
             {eyebrow}
