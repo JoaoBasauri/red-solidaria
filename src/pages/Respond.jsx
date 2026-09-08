@@ -237,7 +237,7 @@ export default function Respond() {
                 src={`${A}/responde-ilustracion.png`}
                 alt="Kit de emergencia de Red Solidaria"
                 loading="lazy"
-                className="h-auto w-full"
+                className="max-h-max w-full"
               />
               <button
                 type="button"
