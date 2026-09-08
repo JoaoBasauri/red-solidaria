@@ -2,6 +2,50 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { renderEmail } from './email-templates.mjs';
 import { readFileSync } from 'node:fs';
+import { requestMessages } from './request-messages.mjs';
+
+test('recepción usa el mensaje general para cada tipo sin anunciar aprobación', () => {
+  for (const tipo of Object.keys(requestMessages.approved)) {
+    const mail = renderEmail('solicitud_recibida', { tipo, codigo: 'RS-TEST' });
+    assert.match(mail.text, /próximas 48 horas/);
+    assert.match(mail.text, /no respondas a este mensaje/);
+    assert.ok(!mail.text.includes('ha sido activada'));
+    assert.ok(!mail.text.includes('podremos atender tu solicitud'));
+  }
+});
+
+test('aprobaciones conservan el texto proporcionado, firma y membrete al final', () => {
+  for (const [tipo, message] of Object.entries(requestMessages.approved)) {
+    const mail = renderEmail('cambio_estado', { tipo, estado: 'APROBADA', codigo: 'RS-TEST', direccion: 'Dirección de prueba' });
+    for (const line of message.split('\n').map(value => value.trim()).filter(Boolean)) {
+      if (line !== '[INFO LLENADA EN EL FORM]') assert.ok(mail.text.includes(line), `${tipo}: ${line}`);
+    }
+    assert.ok(!mail.text.includes('[INFO LLENADA EN EL FORM]'));
+    assert.ok(mail.html.lastIndexOf('membrete-correo.png') > mail.html.indexOf('Articulamos esfuerzos para llegar más lejos.'));
+    assert.match(mail.text, /Estado: Aprobada/);
+  }
+});
+
+test('rechazos específicos y otros estados no anuncian activación', () => {
+  for (const [tipo, message] of Object.entries(requestMessages.rejected)) {
+    const mail = renderEmail('cambio_estado', { tipo, estado: 'RECHAZADA', observacion: 'Motivo registrado' });
+    assert.ok(mail.text.includes(message.split('\n')[1]));
+    assert.match(mail.text, /Motivo registrado/);
+  }
+  for (const estado of ['EN_REVISION', 'OBSERVADA', 'CANCELADA', 'CERRADA', 'ATENDIDA']) {
+    const mail = renderEmail('cambio_estado', { tipo: 'EMERGENCIA', estado });
+    assert.ok(!mail.text.includes('ha sido activada'));
+  }
+});
+
+test('material visual y media kit son enlaces; cuentas y CCI se conservan', () => {
+  const point = renderEmail('cambio_estado', { tipo: 'PUNTO_ACOPIO', estado: 'APROBADA', direccion: 'Dirección de prueba' });
+  assert.match(point.html, /href="https:\/\/drive.google.com\/drive\/folders\/1xgxm5PD9lErgJI4ot78IhOTAEFfUMBDw"/);
+  assert.ok(point.text.indexOf('Dirección de prueba') < point.text.indexOf('Para apoyar la difusión'));
+  const offer = renderEmail('cambio_estado', { tipo: 'OFERTA_RECURSO', estado: 'APROBADA' });
+  assert.match(offer.text, /193-2029045-0-03/);
+  assert.match(offer.text, /00219300202904500318/);
+});
 
 test('membrete público en confirmaciones y cambios de estado', () => {
   for (const type of ['solicitud_recibida', 'cambio_estado']) {

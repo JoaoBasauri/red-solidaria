@@ -1,3 +1,5 @@
+import { predefinedMessage } from './request-messages.mjs';
+
 const types = {
   EMERGENCIA: "Reporte de emergencia",
   KIT: "Solicitud de kits",
@@ -79,9 +81,11 @@ export function renderEmail(template, data = {}) {
   if (!["solicitud_recibida", "cambio_estado"].includes(template))
     throw new Error("Plantilla de correo no reconocida");
   const received = template === "solicitud_recibida";
-  const title = received
+  const message = predefinedMessage(template, data);
+  const lines = message?.split('\n').map(line => line.trim()).filter(Boolean);
+  const title = lines?.[0] || (received
     ? "Recibimos tu solicitud"
-    : "Actualización de tu solicitud";
+    : "Actualización de tu solicitud");
   const rows = [
     ["Código de seguimiento", data.codigo],
     ["Tipo de solicitud", types[data.tipo] || "Solicitud"],
@@ -106,15 +110,21 @@ export function renderEmail(template, data = {}) {
     : "El estado de tu solicitud ha cambiado. Estos son sus datos:";
   const footer =
     "Conserva tu código de seguimiento. La recepción de la solicitud no implica su aprobación ni garantiza la entrega de ayuda.\nEquipo Red Solidaria · Fundación OLI";
+  // Los últimos dos renglones de los textos aprobados son la firma institucional.
+  const body = lines ? lines.slice(1, -2).join('\n') : intro;
+  const signature = lines ? lines.slice(-2).join('\n') : footer;
+  const [beforeDetails, afterDetails = ''] = body.split('[INFO LLENADA EN EL FORM]');
+  const paragraph = value => `<p style="white-space:pre-line">${escape(value).replace(/https:\/\/drive\.google\.com\/drive\/folders\/[A-Za-z0-9_-]+/g, url => `<a href="${url}" style="color:#073164;text-decoration:underline">${url}</a>`)}</p>`;
   return {
     subject: `${title} · ${String(data.codigo || "Red Solidaria").replace(/[\r\n]/g, "")}`,
     text: [
       title,
       greeting,
-      intro,
+      beforeDetails,
       ...rows.map(([key, value]) => `${key}: ${value}`),
-      footer,
+      afterDetails,
+      signature,
     ].join("\n\n"),
-    html: `<html lang="es"><body style="font-family:Arial,sans-serif;color:#073164;line-height:1.6"><main style="max-width:640px;margin:auto;padding:24px"><h1 style="color:#ef5700">${title}</h1><p>${escape(greeting)}</p><p>${intro}</p><table style="width:100%;border-collapse:collapse">${rows.map(([key, value]) => `<tr><th style="padding:10px;text-align:left;vertical-align:top;border-bottom:1px solid #ddd">${key}</th><td style="padding:10px;white-space:pre-wrap;overflow-wrap:anywhere;border-bottom:1px solid #ddd">${escape(value)}</td></tr>`).join("")}</table><p>${escape(footer).replaceAll("\n", "<br>")}</p><img src="https://redsolidaria.olifoundation.org/membrete-correo.png" width="600" height="200" alt="Red Solidaria · La plataforma de emergencia de Fundación OLI" style="display:block;width:100%;max-width:600px;height:auto;border:0;margin:24px auto 0;" /></main></body></html>`,
+    html: `<html lang="es"><body style="font-family:Arial,sans-serif;color:#073164;line-height:1.6"><main style="max-width:640px;margin:auto;padding:24px"><h1 style="color:#ef5700">${escape(title)}</h1><p>${escape(greeting)}</p>${paragraph(beforeDetails)}<table style="width:100%;border-collapse:collapse">${rows.map(([key, value]) => `<tr><th style="padding:10px;text-align:left;vertical-align:top;border-bottom:1px solid #ddd">${key}</th><td style="padding:10px;white-space:pre-wrap;overflow-wrap:anywhere;border-bottom:1px solid #ddd">${escape(value)}</td></tr>`).join("")}</table>${afterDetails ? paragraph(afterDetails) : ""}${paragraph(signature)}<img src="https://redsolidaria.olifoundation.org/membrete-correo.png" width="600" height="200" alt="Red Solidaria · La plataforma de emergencia de Fundación OLI" style="display:block;width:100%;max-width:600px;height:auto;border:0;margin:24px auto 0;" /></main></body></html>`,
   };
 }
