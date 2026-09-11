@@ -1,5 +1,5 @@
 import { supabase } from "../lib/supabase";
-import { validateRequest } from '../utils/requestValidation.mjs';
+import { normalizeRequestLinks, validateRequest } from '../utils/requestValidation.mjs';
 
 export const REQUEST_TYPES = [
   ["EMERGENCIA", "Reportar una emergencia"],
@@ -33,6 +33,7 @@ export const ALLOWED_TRANSITIONS = {
 
 export async function createPublicRequest(form) {
   validateRequest(form);
+  form = normalizeRequestLinks(form);
   const { data, error } = await supabase.rpc("crear_solicitud_publica", {
     p_tipo: form.type,
     p_nombre: form.name,

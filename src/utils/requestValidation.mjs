@@ -49,6 +49,26 @@ export function requestFields(type, values = {}) {
   return [...(fields[type] || []), ...(extraFields[type] || [])].filter(([name]) => visibleField(name, values))
 }
 
+export function normalizeRequestUrl(value) {
+  const text = String(value ?? '').trim();
+  if (!text) return '';
+  if (/[\s\\]/.test(text)) throw new Error('Enlace inválido');
+  const url = new URL(/^[a-z][a-z\d+.-]*:/i.test(text) ? text : `https://${text}`);
+  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password ||
+      !/^(?:[a-z\d](?:[a-z\d-]*[a-z\d])?\.)+[a-z\d](?:[a-z\d-]*[a-z\d])?$/i.test(url.hostname)) {
+    throw new Error('Enlace inválido');
+  }
+  return url.href;
+}
+
+export function normalizeRequestLinks(form) {
+  const details = { ...form.details };
+  for (const [name,,type] of requestFields(form.type, details)) {
+    if (type === 'url' && details[name] != null) details[name] = normalizeRequestUrl(details[name]);
+  }
+  return { ...form, details };
+}
+
 export function validateRequest(form) {
   if (!fields[form.type]) throw new Error('Tipo de solicitud inválido.');
   if ((form.name || '').trim().length < 2) throw new Error('El nombre debe tener al menos 2 caracteres.');
@@ -70,7 +90,7 @@ export function validateRequest(form) {
     if (name === 'edad' && Number(value) > 120) throw new Error('Ingresa una edad válida.');
     if (type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) throw new Error(`${label}: correo inválido.`);
     if (type === 'time' && !/^([01]\d|2[0-3]):[0-5]\d$/.test(value)) throw new Error('Ingresa una hora válida.');
-    if (type === 'url') { try { if (!['http:', 'https:'].includes(new URL(value).protocol)) throw new Error(); } catch { throw new Error(`${label}: usa un enlace HTTP o HTTPS válido.`); } }
+    if (type === 'url') { try { normalizeRequestUrl(value); } catch { throw new Error(`${label}: ingresa un enlace válido, por ejemplo dominio.com.`); } }
     if (type === 'date' && (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(Date.parse(value)) || new Date(value).toISOString().slice(0,10) !== value)) throw new Error(`${label}: fecha inválida.`);
   }
   if (!form.region || !form.province || !form.district) throw new Error('Selecciona región, provincia y distrito.');

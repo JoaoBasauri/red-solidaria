@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   createPublicRequest,
@@ -38,6 +38,11 @@ function Register() {
     : empty.type;
   const [form, setForm] = useState({ ...empty, type: initialType });
   const [message, setMessage] = useState("");
+  const [toast, setToast] = useState(null);
+  const [toastPaused, setToastPaused] = useState(false);
+  const headingRef = useRef(null);
+  const errorRef = useRef(null);
+  const submitting = useRef(false);
   const [loading, setLoading] = useState(false);
   const [files, setFiles] = useState([]);
   const [evidenceEnabled, setEvidenceEnabled] = useState(false);
@@ -83,10 +88,30 @@ function Register() {
     isEvidenceUploadEnabled().then(setEvidenceEnabled);
   }, []);
 
+  useEffect(() => {
+    if (!toast) return;
+    headingRef.current?.focus({ preventScroll: true });
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [toast]);
+
+  useEffect(() => {
+    if (!toast || toastPaused) return;
+    const timer = window.setTimeout(() => setToast(null), toast.warning ? 15000 : 10000);
+    return () => window.clearTimeout(timer);
+  }, [toast, toastPaused]);
+
+  useEffect(() => {
+    if (message) errorRef.current?.focus();
+  }, [message]);
+
   async function submit(e) {
     e.preventDefault();
+    if (submitting.current) return;
+    submitting.current = true;
     setLoading(true);
     setMessage("");
+    setToast(null);
+    setToastPaused(false);
     try {
       if (needsMap && (form.latitude === "" || form.longitude === ""))
         throw new Error("Selecciona la ubicación en el mapa antes de enviar.");
@@ -103,25 +128,44 @@ function Register() {
       const failed = results.filter(
         (item) => item.status === "rejected",
       ).length;
-      setMessage(
-        failed
-          ? `Solicitud ${result.codigo} recibida, pero ${failed} evidencia(s) no pudieron cargarse.`
-          : `Solicitud recibida. Código: ${result.codigo}`,
-      );
+      setToast({
+        code: result.codigo,
+        warning: failed > 0,
+        description: failed
+          ? `Tu solicitud se registró, pero ${failed} archivo(s) no pudieron cargarse. No es necesario enviar otra solicitud.`
+          : "Gracias por sumarte a la Red Solidaria. Conserva tu código para el seguimiento de tu solicitud.",
+      });
       setForm(empty);
       setFiles([]);
     } catch (error) {
       setMessage(error.message || "No se pudo registrar la solicitud.");
     } finally {
+      submitting.current = false;
       setLoading(false);
     }
   }
 
   return (
     <PublicLayout>
+      <div aria-live="polite" aria-atomic="true" className="pointer-events-none fixed inset-x-4 top-4 z-[1000] sm:left-auto sm:right-6 sm:w-[28rem]">
+        {toast && <div
+          onMouseEnter={() => setToastPaused(true)}
+          onMouseLeave={() => setToastPaused(false)}
+          onFocus={() => setToastPaused(true)}
+          onBlur={() => setToastPaused(false)}
+          className={`pointer-events-auto rounded-2xl border-l-4 bg-white p-5 text-[#073164] shadow-[0_8px_32px_#0003] ${toast.warning ? "border-amber-500" : "border-emerald-600"}`}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-lg font-bold">{toast.warning ? "Solicitud recibida con observaciones" : "¡Solicitud enviada correctamente!"}</p>
+            <button type="button" aria-label="Cerrar confirmación" onClick={() => setToast(null)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-2xl hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-[#073164]">×</button>
+          </div>
+          <p className="mt-2 break-words font-bold">Código de seguimiento: {toast.code}</p>
+          <p className="mt-2 text-sm leading-6">{toast.description}</p>
+        </div>}
+      </div>
       {/* Sección: encabezado de la pantalla de solicitudes. */}
       <section className="mx-auto max-w-7xl px-5 pb-10 pt-16 text-[#073164] sm:px-8">
-        <h1 className="text-4xl font-bold sm:text-5xl">Enviar una solicitud</h1>
+        <h1 ref={headingRef} tabIndex={-1} className="text-4xl font-bold outline-none sm:text-5xl">Enviar una solicitud</h1>
         <p className="mt-3 text-lg">
           No necesitas crear una cuenta. Te informaremos por correo.
         </p>
@@ -232,7 +276,7 @@ function Register() {
             {loading ? "Enviando..." : "Enviar solicitud"}
           </button>
           {message && (
-            <p className="mt-4 rounded-xl bg-orange-50 p-4 text-[#0a2f5f]">
+            <p ref={errorRef} tabIndex={-1} role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-red-800">
               {message}
             </p>
           )}

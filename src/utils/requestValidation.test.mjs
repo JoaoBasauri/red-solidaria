@@ -1,8 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { fields, requestFields, validateRequest } from './requestValidation.mjs';
+import { fields, requestFields, validateRequest, normalizeRequestLinks, normalizeRequestUrl } from './requestValidation.mjs';
 import { options } from './requestOptions.mjs';
 const base = {name:'Persona de prueba',email:'test@example.invalid',phone:'999000000',description:'Descripción válida',consent:true,latitude:'-12',longitude:'-77',address:'Dirección de prueba',region:'LIMA',province:'LIMA',district:'LINCE'};
+test('acepta dominios sin protocolo y normaliza ambos campos sin mutar el formulario', () => {
+  for (const [type, field] of [['ALIADO', 'sitio_web'], ['EMERGENCIA', 'enlace_evidencia']]) {
+    const f = form(type);
+    for (const value of ['olifoundation.org', 'www.olifoundation.org', 'olifoundation.org/ruta?q=1', 'https://olifoundation.org', 'http://olifoundation.org']) {
+      f.details[field] = value;
+      assert.doesNotThrow(() => validateRequest(f));
+      const normalized = normalizeRequestLinks(f);
+      assert.equal(normalized.details[field], new URL(value.startsWith('http') ? value : `https://${value}`).href);
+      assert.equal(f.details[field], value);
+    }
+    for (const value of ['javascript:alert(1)', 'ftp://dominio.com', 'no es un enlace', 'dominio', 'https://usuario@dominio.com']) {
+      f.details[field] = value;
+      assert.throws(() => validateRequest(f));
+    }
+  }
+  assert.equal(normalizeRequestUrl('  olifoundation.org  '), 'https://olifoundation.org/');
+  assert.equal(normalizeRequestUrl(''), '');
+});
 function form(type, participant = 'Organización') {
   const details = { tipo_participante: participant, confirmacion_veracidad: true };
   for (const [key,,kind,required] of requestFields(type, details)) if(required) details[key] = key === 'tipo_participante' ? participant : key === 'dni' ? '12345678' : options[key]?.[0] || (kind === 'number' ? '1' : kind === 'date' ? '2026-09-07' : kind === 'time' ? '12:30' : kind === 'email' ? 'contacto@example.invalid' : 'Prueba');
