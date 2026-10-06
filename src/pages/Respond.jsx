@@ -17,6 +17,7 @@ const kitProducts = [
   ["Pañales de adulto mayor", 2],
   ["Repelente", 4],
   ["Bloqueador solar", 4],
+  ["Litros de agua", 10],
 ];
 const gradient = "bg-gradient-to-r from-[#1d5088] to-[#4aa7d1]";
 const steps = [
