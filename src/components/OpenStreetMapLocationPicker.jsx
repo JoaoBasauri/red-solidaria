@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import catalog from '../data/ubigeo.json'
-import { mapAddress } from '../utils/mapAddress.mjs'
+import { mapAddress, reverseGeocode } from '../utils/mapAddress.mjs'
 
 let leafletPromise
 
@@ -54,11 +54,7 @@ function OpenStreetMapLocationPicker({ value, onChange }) {
         clearTimeout(reverseTimer)
         reverseTimer = setTimeout(async () => {
           try {
-            const url = new URL('https://nominatim.openstreetmap.org/reverse')
-            url.search = new URLSearchParams({ format:'jsonv2', lat:String(latlng.lat), lon:String(latlng.lng), zoom:'18', addressdetails:'1' })
-            const response = await fetch(url, { headers: { 'Accept-Language': 'es' } })
-            if (!response.ok) throw new Error('No se pudo consultar la ubicación.')
-            const result = await response.json()
+            const result = await reverseGeocode(latlng.lat, latlng.lng)
             if (active && currentSelection === selection) {
               const location = mapAddress(result, catalog)
               onChangeRef.current({ ...coordinates, ...location })
