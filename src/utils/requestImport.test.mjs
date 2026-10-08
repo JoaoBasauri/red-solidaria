@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fields } from './requestValidation.mjs';
 import { options } from './requestOptions.mjs';
-import { geocodeRows, MAP_TYPES, MAX_IMPORT_ROWS, parseImportRows, templateColumns } from './requestImport.mjs';
+import { confirmLocation, geocodeRows, MAP_TYPES, MAX_IMPORT_ROWS, parseImportRows, templateColumns } from './requestImport.mjs';
 const catalog = JSON.parse(readFileSync(new URL('../data/ubigeo.json', import.meta.url)));
 const emergencies = [{ id: '11111111-1111-1111-1111-111111111111', codigo: 'RS-2026-0001', asunto: 'Huayco en Chosica' }];
 const context = { catalog, emergencies };
@@ -58,28 +58,14 @@ test('rechaza archivos sin las columnas de la plantilla o con demasiadas filas',
   assert.throws(() => parseImportRows('KIT', [{ Nombre: 'Prueba' }], context), /Faltan columnas/);
   assert.throws(() => parseImportRows('KIT', Array.from({ length: MAX_IMPORT_ROWS + 1 }, () => row('KIT')), context), /máximo/);
 });
-test('en los tipos con mapa la ubicación sale de las coordenadas e ignora columnas antiguas', async () => {
-  const headers = templateColumns('PUNTO_ACOPIO', context).map(column => column.label);
-  assert.ok(headers.includes('Latitud') && headers.includes('Longitud'));
-  assert.ok(!['Región', 'Provincia', 'Distrito', 'Dirección'].some(label => headers.includes(label)));
-  assert.ok(templateColumns('KIT', context).some(column => column.label === 'Región'));
-  const legacy = row('PUNTO_ACOPIO', { 'Región *': 'Cusco', 'Provincia *': 'X', 'Distrito *': 'Y', 'Dirección *': 'Otra dirección' });
-  const parsed = parseImportRows('PUNTO_ACOPIO', [legacy], context);
-  assert.deepEqual(parsed.unknown, []);
-  assert.equal(parsed.rows[0].pending, true);
-  const calls = [];
-  const [point] = await geocodeRows(parsed.rows, { ...geo, reverse: async (lat, lng) => { calls.push([lat, lng]); return lince; } });
-  assert.deepEqual(calls, [['-12.05', '-77.03']]);
-  assert.deepEqual([point.error, point.form.region, point.form.province, point.form.district, point.form.address], ['', 'LIMA', 'LIMA', 'LINCE', lince.display_name]);
-});
 test('acepta coma decimal y las dos coordenadas pegadas en la celda de latitud', () => {
-  const comma = parseImportRows('EMERGENCIA', [row('EMERGENCIA', { 'Latitud *': '-12,08712', 'Longitud *': '-77,03645' })], context).rows[0];
+  const comma = parseImportRows('EMERGENCIA', [row('EMERGENCIA', { 'Latitud': '-12,08712', 'Longitud': '-77,03645' })], context).rows[0];
   assert.deepEqual([comma.error, comma.form.latitude, comma.form.longitude], ['', '-12.08712', '-77.03645']);
-  const pair = parseImportRows('EMERGENCIA', [row('EMERGENCIA', { 'Latitud *': '-12.08712, -77.03645', 'Longitud *': '' })], context).rows[0];
+  const pair = parseImportRows('EMERGENCIA', [row('EMERGENCIA', { 'Latitud': '-12.08712, -77.03645', 'Longitud': '' })], context).rows[0];
   assert.deepEqual([pair.error, pair.form.latitude, pair.form.longitude], ['', '-12.08712', '-77.03645']);
 });
 test('rechaza coordenadas fuera de Perú explicando el error probable', () => {
-  const error = (lat, lng) => parseImportRows('PUNTO_ACOPIO', [row('PUNTO_ACOPIO', { 'Latitud *': lat, 'Longitud *': lng })], context).rows[0].error;
+  const error = (lat, lng) => parseImportRows('PUNTO_ACOPIO', [row('PUNTO_ACOPIO', { 'Latitud': lat, 'Longitud': lng })], context).rows[0].error;
   assert.match(error(-77.03, -12.05), /invertidas/);
   assert.match(error(12.05, -77.03), /signo negativo/);
   assert.match(error(-12.05, 77.03), /signo negativo/);
@@ -87,16 +73,52 @@ test('rechaza coordenadas fuera de Perú explicando el error probable', () => {
   assert.match(error('', -77.03), /Falta la latitud/);
   assert.match(error('abc', -77.03), /número decimal/);
 });
-test('geocodificación: errores por fila, caché de coordenadas repetidas y progreso', async () => {
-  const rows = parseImportRows('EMERGENCIA', [row('EMERGENCIA'), row('EMERGENCIA'), row('EMERGENCIA', { 'Latitud *': -13.5, 'Longitud *': -71.9 }), row('EMERGENCIA', { 'Latitud *': -9.1, 'Longitud *': -78.5 }), row('EMERGENCIA', { 'Personas afectadas *': 'muchas' })], context).rows;
+test('plantilla con mapa: dirección o coordenadas, e ignora región, provincia y distrito antiguos', () => {
+  const columns = templateColumns('PUNTO_ACOPIO', context);
+  const byLabel = Object.fromEntries(columns.map(column => [column.label, column]));
+  assert.deepEqual([byLabel['Dirección']?.required, byLabel['Latitud']?.required, byLabel['Longitud']?.required], [false, false, false]);
+  assert.ok(!['Región', 'Provincia', 'Distrito'].some(label => label in byLabel));
+  assert.ok(templateColumns('KIT', context).some(column => column.label === 'Región'));
+  const legacy = parseImportRows('PUNTO_ACOPIO', [row('PUNTO_ACOPIO', { 'Región *': 'Cusco', 'Provincia *': 'X', 'Distrito *': 'Y' })], context);
+  assert.deepEqual(legacy.unknown, []);
+  assert.equal(legacy.rows[0].pending, true);
+  const neither = parseImportRows('EMERGENCIA', [row('EMERGENCIA', { 'Dirección': '', 'Latitud': '', 'Longitud': '' })], context).rows[0];
+  assert.match(neither.error, /dirección o la latitud/);
+  const onlyAddress = parseImportRows('EMERGENCIA', [row('EMERGENCIA', { 'Latitud': '', 'Longitud': '' })], context).rows[0];
+  assert.deepEqual([onlyAddress.error, onlyAddress.pending], ['', true]);
+});
+test('propone la ubicación con coordenadas o buscando la dirección, sin dar ninguna fila por lista', async () => {
+  const rows = parseImportRows('PUNTO_ACOPIO', [
+    row('PUNTO_ACOPIO'),
+    row('PUNTO_ACOPIO', { 'Latitud': '', 'Longitud': '', 'Dirección': 'Jr. Joaquín Bernal 409, Lince' }),
+    row('PUNTO_ACOPIO', { 'Latitud': '', 'Longitud': '', 'Dirección': 'jr. joaquin bernal 409, LINCE' }),
+    row('PUNTO_ACOPIO', { 'Latitud': '', 'Longitud': '', 'Dirección': 'Calle que no existe' }),
+    row('PUNTO_ACOPIO', { 'Latitud': '', 'Longitud': '', 'Dirección': 'Falla del servicio' }),
+    row('PUNTO_ACOPIO', { 'Teléfono del responsable *': '' }),
+  ], context).rows;
   const calls = [], progress = [];
-  const reverse = async (lat) => { calls.push(lat); if (lat === '-13.5') return { address: { country_code: 'pe', state: 'Cusco' } }; if (lat === '-9.1') throw new Error('red'); return lince; };
-  const result = await geocodeRows(rows, { catalog, reverse, interval: 0, onProgress: (done, total) => progress.push(`${done}/${total}`) });
-  assert.deepEqual(calls, ['-12.05', '-13.5', '-9.1']);
-  assert.deepEqual(progress, ['1/4', '2/4', '3/4', '4/4']);
-  assert.deepEqual(result.map(item => item.error === ''), [true, true, false, false, false]);
-  assert.match(result[2].error, /CUSCO, pero no identificó la provincia/);
-  assert.match(result[3].error, /No se pudo consultar el mapa/);
-  assert.match(result[4].error, /número/);
-  assert.equal(await geocodeRows(rows, { catalog, reverse, interval: 0, cancelled: () => true }), null);
+  const reverse = async (lat, lng) => { calls.push(['reverse', lat, lng]); return lince; };
+  const search = async query => { calls.push(['search', query]); if (query === 'Falla del servicio') throw new Error('red'); return query.startsWith('Jr.') ? { ...lince, lat: '-12.0871234', lon: '-77.0364567' } : null; };
+  const result = await geocodeRows(rows, { catalog, reverse, search, interval: 0, onProgress: (done, total) => progress.push(`${done}/${total}`) });
+  assert.deepEqual(calls, [['reverse', '-12.05', '-77.03'], ['search', 'Jr. Joaquín Bernal 409, Lince'], ['search', 'Calle que no existe'], ['search', 'Falla del servicio']]);
+  assert.deepEqual(progress, ['1/5', '2/5', '3/5', '4/5', '5/5']);
+  assert.ok(result.slice(0, 5).every(item => item.needsConfirm && !item.confirmed && !item.error));
+  assert.deepEqual([result[0].form.address, result[0].form.district], ['Av. Prueba 123', 'LINCE']);
+  assert.deepEqual([result[1].form.latitude, result[1].form.longitude, result[1].form.address], ['-12.087123', '-77.036457', 'Jr. Joaquín Bernal 409, Lince']);
+  assert.match(result[3].note, /No se encontró la dirección/);
+  assert.equal(result[3].form.latitude, '');
+  assert.match(result[4].note, /No se pudo consultar/);
+  assert.match(result[5].error, /Teléfono del responsable/);
+  assert.equal(await geocodeRows(rows, { catalog, reverse, search, interval: 0, cancelled: () => true }), null);
+});
+test('confirmar la ubicación aplica el punto del mapa, valida y permite editar la dirección', async () => {
+  const [proposed] = await geocodeRows(parseImportRows('PUNTO_ACOPIO', [row('PUNTO_ACOPIO')], context).rows, geo);
+  const moved = { latitude: '-12.121900', longitude: '-77.029700', region: 'LIMA', province: 'LIMA', district: 'MIRAFLORES' };
+  const confirmed = confirmLocation(proposed, moved, '  Av. Larco 123, Miraflores ');
+  assert.deepEqual([confirmed.confirmed, confirmed.form.district, confirmed.form.latitude, confirmed.form.address], [true, 'MIRAFLORES', '-12.1219', 'Av. Larco 123, Miraflores']);
+  assert.equal(confirmLocation(confirmed, { ...moved, district: 'LINCE' }, 'Otra dirección').form.district, 'LINCE');
+  assert.throws(() => confirmLocation(proposed, { ...moved, district: '' }, 'Av. Larco 123'), /distrito/);
+  assert.throws(() => confirmLocation(proposed, { latitude: '', longitude: '' }, 'Av. Larco 123'), /Ubica el punto/);
+  assert.throws(() => confirmLocation(proposed, { ...moved, latitude: '40.4', longitude: '-3.7' }, 'Av. Larco 123'), /fuera de Perú/);
+  assert.throws(() => confirmLocation(proposed, moved, ''), /dirección del punto de acopio/);
 });

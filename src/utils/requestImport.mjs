@@ -1,6 +1,6 @@
 import { extraFields, multiFields, options, visibleField } from './requestOptions.mjs'
 import { fields, requestFields, validateRequest } from './requestValidation.mjs'
-import { mapAddress, reverseGeocode } from './mapAddress.mjs'
+import { mapAddress, reverseGeocode, searchAddress } from './mapAddress.mjs'
 
 // Carga masiva de solicitudes desde Excel: columnas de cada plantilla y conversión de filas al formulario público.
 export const MAX_IMPORT_ROWS = 500
@@ -11,8 +11,8 @@ const YES = ['si', 's', 'yes', 'x', 'true', '1', 'verdadero']
 const NO = ['no', 'n', 'false', '0', 'falso']
 // Rectángulo que contiene a Perú: detecta latitud y longitud invertidas o sin signo negativo.
 const PERU = { latitude: [-18.5, 0.1], longitude: [-81.5, -68.5] }
-// Columnas que en los tipos con mapa se generan desde las coordenadas; si vienen en el archivo se ignoran.
-const DERIVED_HEADERS = ['region', 'provincia', 'distrito', 'direccion']
+// Columnas que en los tipos con mapa se toman del punto confirmado en el mapa; si vienen en el archivo se ignoran.
+const DERIVED_HEADERS = ['region', 'provincia', 'distrito']
 
 export function normalizeText(value) {
   return String(value ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
@@ -25,10 +25,11 @@ function generalColumns(type) {
     ['email', 'Correo', true, 'Correo válido. Recibirá la confirmación de su solicitud.'],
     ['phone', 'Teléfono', true, 'Teléfono de contacto.'],
     ['description', 'Descripción', true, 'Mínimo 5 caracteres.'],
-    // En los tipos con mapa la dirección, región, provincia y distrito se generan desde las coordenadas, igual que en el formulario web.
+    // En los tipos con mapa cada ubicación se confirma en el mapa al cargar el archivo; región, provincia y distrito salen del punto confirmado.
     ...(MAP_TYPES.includes(type) ? [
-      ['latitude', 'Latitud', true, 'Primer número de las coordenadas de Google Maps (clic derecho sobre el lugar exacto y clic en las coordenadas para copiarlas). Con punto decimal y 5 o más decimales, por ejemplo -12.08712. En Perú siempre es negativa, entre 0 y -18. La dirección, región, provincia y distrito se generan a partir de las coordenadas.'],
-      ['longitude', 'Longitud', true, 'Segundo número de las coordenadas de Google Maps, por ejemplo -77.03645. En Perú siempre es negativa, entre -68 y -81.'],
+      ['address', 'Dirección', false, 'Obligatoria si la fila no trae latitud y longitud. Escribe calle, número, distrito y ciudad, por ejemplo: Jr. Joaquín Bernal 409, Lince, Lima. Con ella se propone el punto en el mapa.'],
+      ['latitude', 'Latitud', false, 'Opcional, para ubicar el punto con precisión. Primer número de las coordenadas de Google Maps (clic derecho sobre el lugar exacto y clic en las coordenadas para copiarlas), con punto decimal, por ejemplo -12.08712. En Perú siempre es negativa, entre 0 y -18.'],
+      ['longitude', 'Longitud', false, 'Opcional. Segundo número de las coordenadas de Google Maps, por ejemplo -77.03645. En Perú siempre es negativa, entre -68 y -81.'],
     ] : [
       ['region', 'Región', true, 'Nombre de la región, por ejemplo LIMA.'],
       ['province', 'Provincia', true, 'Provincia de la región indicada.'],
@@ -100,6 +101,7 @@ function readCoordinates(form) {
   // Si se pegaron las dos coordenadas de Google Maps en la celda de latitud, se separan.
   const pair = String(form.latitude).match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/)
   if (pair && !String(form.longitude).trim()) [form.latitude, form.longitude] = [pair[1], pair[2]]
+  if (!String(form.latitude).trim() && !String(form.longitude).trim()) return { latitude: '', longitude: '' }
   const latitude = coordinate(form.latitude, 'Latitud'), longitude = coordinate(form.longitude, 'Longitud')
   if (!inRange(latitude, PERU.latitude) || !inRange(longitude, PERU.longitude)) {
     if (inRange(latitude, PERU.longitude) && inRange(longitude, PERU.latitude)) throw new Error('Latitud y longitud están invertidas: la latitud es el primer número de Google Maps (en Perú entre 0 y -18).')
@@ -169,15 +171,18 @@ export function parseImportRows(type, rows, context) {
         else if (column.general) form[column.key] = String(raw ?? '').trim()
         else form.details[column.key] = convertDetail(column, raw, context)
       }
-      if (mapType) Object.assign(form, readCoordinates(form))
+      if (mapType) {
+        Object.assign(form, readCoordinates(form))
+        if (!form.latitude && !form.address) throw new Error('Escribe la dirección o la latitud y longitud del lugar.')
+      }
       else if (form.region || form.province || form.district) Object.assign(form, resolveLocation(form, context.catalog))
       // Igual que el formulario web: descartar campos que no aplican según las respuestas de la fila.
       const visible = new Set(requestFields(type, form.details).map(([name]) => name))
       for (const key of Object.keys(form.details)) if ((!visible.has(key) && key !== 'confirmacion_veracidad') || form.details[key] === '') delete form.details[key]
       if (form.details.emergencia_interes) form.details.emergencia_interes_nombre = form.details.emergencia_interes === 'Indistinto' ? 'Indistinto' : emergencyLabel((context.emergencies || []).find(item => item.id === form.details.emergencia_interes))
       if (!form.consent) throw new Error('La persona debe autorizar el tratamiento de sus datos (Sí).')
-      // En los tipos con mapa la ubicación se completa después con geocodeRows; aquí se valida el resto de la fila.
-      validateRequest(mapType ? { ...form, region: '-', province: '-', district: '-', address: '-' } : form)
+      // En los tipos con mapa la ubicación se propone con geocodeRows y se confirma en el mapa; aquí se valida el resto de la fila.
+      validateRequest(mapType ? { ...form, region: '-', province: '-', district: '-', address: '-', latitude: '0', longitude: '0' } : form)
       return { line, form, error: '', pending: mapType }
     } catch (error) {
       return { line, form, error: error.message, pending: false }
@@ -188,36 +193,48 @@ export function parseImportRows(type, rows, context) {
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
-// Completa dirección, región, provincia y distrito de las filas con mapa a partir de sus coordenadas.
-// Consulta una fila a la vez (máximo 1 por segundo) y reutiliza el resultado de coordenadas repetidas.
-export async function geocodeRows(rows, { catalog, reverse = reverseGeocode, interval = 1100, onProgress = () => {}, cancelled = () => false }) {
+// Propone la ubicación de cada fila con mapa: usa sus coordenadas o, si no tiene, busca la dirección en OpenStreetMap.
+// Consulta una fila a la vez (máximo 1 por segundo) y reutiliza resultados repetidos. Ninguna fila queda lista sin confirmarse en el mapa.
+export async function geocodeRows(rows, { catalog, reverse = reverseGeocode, search = searchAddress, interval = 1100, onProgress = () => {}, cancelled = () => false }) {
   const total = rows.filter(row => row.pending).length, cache = new Map(), result = []
   let done = 0, last = 0
   for (const row of rows) {
     if (!row.pending) { result.push(row); continue }
     if (cancelled()) return null
-    const key = `${row.form.latitude},${row.form.longitude}`
-    try {
-      let place = cache.get(key)
-      if (!place) {
-        if (last) await sleep(Math.max(0, interval - (Date.now() - last)))
-        if (cancelled()) return null
-        last = Date.now()
-        try { place = mapAddress(await reverse(row.form.latitude, row.form.longitude), catalog) }
-        catch { throw new Error('No se pudo consultar el mapa para estas coordenadas. Vuelve a subir el archivo para reintentar.') }
-        cache.set(key, place)
+    const hasPoint = row.form.latitude !== '' && row.form.longitude !== ''
+    const key = hasPoint ? `p:${row.form.latitude},${row.form.longitude}` : `q:${normalizeText(row.form.address)}`
+    let found = cache.get(key), note = ''
+    if (!found) {
+      if (last) await sleep(Math.max(0, interval - (Date.now() - last)))
+      if (cancelled()) return null
+      last = Date.now()
+      try {
+        const answer = hasPoint ? await reverse(row.form.latitude, row.form.longitude) : await search(row.form.address)
+        found = answer ? { place: mapAddress(answer, catalog), latitude: hasPoint ? row.form.latitude : Number(answer.lat).toFixed(6), longitude: hasPoint ? row.form.longitude : Number(answer.lon).toFixed(6) } : { missing: true }
+        cache.set(key, found)
+      } catch {
+        found = { failed: true }
       }
-      if (!place.region) throw new Error('El mapa no reconoce estas coordenadas como un lugar de Perú. Revisa la latitud y la longitud.')
-      if (!place.province || !place.district) throw new Error(`El mapa ubicó el punto en ${place.region}, pero no identificó ${place.province ? 'el distrito' : 'la provincia'}. Revisa las coordenadas.`)
-      const form = { ...row.form, region: place.region, province: place.province, district: place.district, address: place.address }
-      validateRequest(form)
-      result.push({ line: row.line, form, error: '', pending: false })
-    } catch (error) {
-      result.push({ ...row, error: error.message, pending: false })
     }
+    const place = found.place || {}
+    if (found.failed) note = 'No se pudo consultar el mapa. Ubica el punto manualmente.'
+    else if (found.missing) note = 'No se encontró la dirección en el mapa. Ubica el punto manualmente.'
+    else if (!place.district) note = 'El mapa no identificó el distrito. Revisa el punto al confirmar.'
+    const form = { ...row.form, latitude: found.latitude || '', longitude: found.longitude || '', region: place.region || '', province: place.province || '', district: place.district || '', address: row.form.address || place.address || '' }
+    result.push({ ...row, form, pending: false, needsConfirm: true, confirmed: false, addressFromFile: Boolean(row.form.address), note })
     onProgress(++done, total)
   }
   return result
+}
+
+// Aplica el punto confirmado (o corregido) en el mapa a una fila y la valida completa.
+export function confirmLocation(row, location, address) {
+  const form = { ...row.form, latitude: String(location.latitude ?? ''), longitude: String(location.longitude ?? ''), region: location.region || '', province: location.province || '', district: location.district || '', address: String(address ?? '').trim() }
+  if (!form.latitude || !form.longitude) throw new Error('Ubica el punto en el mapa.')
+  Object.assign(form, readCoordinates(form))
+  if (!form.region || !form.province || !form.district) throw new Error('Completa la región, provincia y distrito del punto.')
+  validateRequest(form)
+  return { ...row, form, confirmed: true, note: '' }
 }
 
 export function emergencyLabel(item) {

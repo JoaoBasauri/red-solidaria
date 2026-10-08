@@ -37,3 +37,12 @@ export async function reverseGeocode(latitude, longitude) {
   if (!response.ok) throw new Error('No se pudo consultar la ubicación.');
   return response.json();
 }
+
+// Búsqueda de una dirección en Perú con el mismo servicio; devuelve el mejor resultado o null.
+export async function searchAddress(query) {
+  const url = new URL('https://nominatim.openstreetmap.org/search');
+  url.search = new URLSearchParams({ format:'jsonv2', q:String(query), countrycodes:'pe', addressdetails:'1', limit:'1' });
+  const response = await fetch(url, { headers: { 'Accept-Language': 'es' } });
+  if (!response.ok) throw new Error('No se pudo buscar la dirección.');
+  return (await response.json())[0] || null;
+}
