@@ -74,6 +74,7 @@ export function Home() {
           Súmate como aliado
         </PrimaryLink>
       </PageHero>
+      <AlliesBanner />
       {/* Sección: proceso de respuesta en cuatro etapas, desde la identificación hasta el reporte. */}
       <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:px-10 lg:py-20">
         <h2 className="text-xl font-black uppercase tracking-wide text-[#ff6826] sm:text-2xl">
@@ -333,7 +334,6 @@ export function Home() {
           </div>
         </div>
       </section>
-      <AlliesBanner />
       {/* Sección: convocatoria final para sumar personas, empresas y organizaciones. */}
       <section className="relative isolate min-h-[28rem] overflow-hidden text-white">
         <img
