@@ -14,6 +14,7 @@ import RecoveryRedirect from './components/RecoveryRedirect'
 import UpdatePassword from './pages/UpdatePassword'
 import ProfileSettings from './pages/Oli/ProfileSettings'
 import Volunteers from './pages/Oli/Volunteers'
+import Allies from './pages/Oli/Allies'
 import CollectionPoints from './pages/CollectionPoints'
 import Seo from './components/Seo'
 import Publications from './pages/Oli/Publications'
@@ -60,6 +61,7 @@ function App() {
 
         <Route path="/oli/perfiles" element={<ProtectedRoute requiredRole="ADMIN"><ProfileSettings /></ProtectedRoute>} />
         <Route path="/oli/voluntarios" element={<ProtectedRoute requiredRole="ADMIN"><Volunteers /></ProtectedRoute>} />
+        <Route path="/oli/aliados" element={<ProtectedRoute requiredRole="ADMIN"><Allies /></ProtectedRoute>} />
 
       </Routes>
     </BrowserRouter>

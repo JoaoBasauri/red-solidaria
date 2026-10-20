@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import AlliesBanner from "../components/AlliesBanner";
 import PublicLayout, {
   PageHero,
   PrimaryLink,
@@ -332,6 +333,7 @@ export function Home() {
           </div>
         </div>
       </section>
+      <AlliesBanner />
       {/* Sección: convocatoria final para sumar personas, empresas y organizaciones. */}
       <section className="relative isolate min-h-[28rem] overflow-hidden text-white">
         <img

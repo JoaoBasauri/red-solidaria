@@ -9,6 +9,8 @@ import {
 import OpenStreetMapLocationPicker from "../components/OpenStreetMapLocationPicker";
 import RequestTypeFields from "../components/RequestTypeFields";
 import EvidencePicker from "../components/EvidencePicker";
+import LogoPicker from "../components/LogoPicker";
+import { uploadAllyLogo } from "../services/allies.service";
 import LocationDropdowns from "../components/LocationDropdowns";
 import PublicLayout from "../components/PublicLayout";
 import StyledSelect from "../components/StyledSelect";
@@ -45,9 +47,12 @@ function Register() {
   const submitting = useRef(false);
   const [loading, setLoading] = useState(false);
   const [files, setFiles] = useState([]);
+  const [logo, setLogo] = useState(null);
   const [evidenceEnabled, setEvidenceEnabled] = useState(false);
   const point = form.type === "PUNTO_ACOPIO";
   const needsMap = point || form.type === "EMERGENCIA";
+  // Solo las organizaciones aliadas pueden proponer su logo para el banner público.
+  const wantsLogo = form.type === "ALIADO" && form.details.tipo_participante === "Organización";
   const update = ({ target }) => {
     if (target.name === "type") setFiles([]);
     setForm((v) => ({
@@ -128,15 +133,26 @@ function Register() {
       const failed = results.filter(
         (item) => item.status === "rejected",
       ).length;
+      let logoError = "";
+      if (wantsLogo && logo) {
+        try {
+          await uploadAllyLogo(result, logo);
+        } catch (error) {
+          logoError = error.message || "No se pudo cargar el logo.";
+        }
+      }
       setToast({
         code: result.codigo,
-        warning: failed > 0,
+        warning: failed > 0 || Boolean(logoError),
         description: failed
           ? `Tu solicitud se registró, pero ${failed} archivo(s) no pudieron cargarse. No es necesario enviar otra solicitud.`
-          : "Gracias por sumarte a la Red Solidaria. Conserva tu código para el seguimiento de tu solicitud.",
+          : logoError
+            ? `Tu solicitud se registró, pero el logo no pudo cargarse (${logoError}). No es necesario enviar otra solicitud.`
+            : "Gracias por sumarte a la Red Solidaria. Conserva tu código para el seguimiento de tu solicitud.",
       });
       setForm(empty);
       setFiles([]);
+      setLogo(null);
     } catch (error) {
       setMessage(error.message || "No se pudo registrar la solicitud.");
     } finally {
@@ -227,6 +243,7 @@ function Register() {
           {evidenceEnabled && ["EMERGENCIA", "KIT"].includes(form.type) && (
             <EvidencePicker files={files} onChange={setFiles} />
           )}
+          {wantsLogo && <LogoPicker file={logo} onChange={setLogo} />}
           {/* Sección: selector de ubicación para emergencias y puntos de acopio. */}
           {needsMap && (
             <section className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
