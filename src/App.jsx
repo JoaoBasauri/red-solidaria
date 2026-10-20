@@ -61,7 +61,7 @@ function App() {
 
         <Route path="/oli/perfiles" element={<ProtectedRoute requiredRole="ADMIN"><ProfileSettings /></ProtectedRoute>} />
         <Route path="/oli/voluntarios" element={<ProtectedRoute requiredRole="ADMIN"><Volunteers /></ProtectedRoute>} />
-        <Route path="/oli/aliados" element={<ProtectedRoute requiredRole="ADMIN"><Allies /></ProtectedRoute>} />
+        <Route path="/oli/aliados" element={<ProtectedRoute><Allies /></ProtectedRoute>} />
 
       </Routes>
     </BrowserRouter>
