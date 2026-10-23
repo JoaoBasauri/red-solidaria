@@ -5,9 +5,9 @@ const SPEED = 28 // píxeles por segundo del desplazamiento automático
 const GAP = 24 // separación entre logos (gap-6), también entre la fila y su copia
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
-// Logo en gris que toma color al pasar el mouse o al enfocarlo; todos con la misma altura visual.
+// Logo siempre a color; todos con la misma altura visual.
 function AllyLogo({ ally, hidden = false }) {
-  const image = <img src={ally.logo_url} alt={hidden ? '' : ally.nombre} draggable="false" className="max-h-12 w-auto max-w-[9.5rem] object-contain opacity-60 grayscale transition duration-300 group-hover:opacity-100 group-hover:grayscale-0 group-focus-visible:opacity-100 group-focus-visible:grayscale-0 motion-reduce:transition-none" />
+  const image = <img src={ally.logo_url} alt={hidden ? '' : ally.nombre} draggable="false" className="max-h-12 w-auto max-w-[9.5rem] object-contain" />
   const box = 'group flex h-24 w-48 items-center justify-center rounded-xl px-4 outline-none focus-visible:ring-4 focus-visible:ring-orange-200'
   return <li className="shrink-0" aria-hidden={hidden || undefined}>{ally.sitio_web
     ? <a href={ally.sitio_web} target="_blank" rel="noopener noreferrer" title={ally.nombre} tabIndex={hidden ? -1 : undefined} className={box}>{image}</a>
@@ -74,7 +74,7 @@ function AlliesCarousel({ allies }) {
 
 // Banner con los logos publicados por OLI; no se muestra si todavía no hay ninguno.
 // items permite mostrar una lista ya cargada (por ejemplo en una vista previa) sin consultar Supabase.
-export default function AlliesBanner({ title = 'Organizaciones que se suman', items }) {
+export default function AlliesBanner({ title = 'Nuestros aliados', items }) {
   const [loaded, setLoaded] = useState([])
   const allies = items || loaded
   useEffect(() => {

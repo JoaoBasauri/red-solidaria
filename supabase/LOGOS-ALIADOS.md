@@ -2,8 +2,8 @@
 
 ## Qué hace
 
-- **Página de inicio:** banner «Organizaciones que se suman» justo debajo del banner principal. Lee solo los logos **publicados** desde Supabase (vista `aliados_publicos` + URL firmada de 1 hora). Si no hay ninguno publicado, el banner no aparece.
-  - Logos en gris que toman color al pasar el mouse o con el teclado, todos a la misma altura visual.
+- **Página de inicio:** banner «Nuestros aliados» justo debajo del banner principal. Lee solo los logos **publicados** desde Supabase (vista `aliados_publicos` + URL firmada de 1 hora). Si no hay ninguno publicado, el banner no aparece.
+  - Logos siempre a color, todos a la misma altura visual.
   - Si no caben en el ancho, carrusel continuo con flechas que se pausa al pasar el mouse, enfocar o tocar. Con `prefers-reduced-motion` no se mueve solo (solo flechas y desplazamiento manual). Si caben, se muestran centrados y sin flechas.
 - **Formulario «Sumarse como aliado»:** cuando se elige *Organización*, aparece el campo opcional «Logo de la organización» con vista previa (normal y como se verá en el banner) y el motivo exacto si no cumple.
 - **Panel OLI → Aliados** (`/oli/aliados`, todos los usuarios activos del panel: ADMIN, GESTOR y LECTURA; botón «Aliados» en la cabecera): lista con vista previa, nombre, enlace, estado, posición y origen. Acciones: aprobar y publicar, ocultar, editar nombre y enlace, reemplazar logo, subir uno manual, reordenar (flechas ↑/↓ con el filtro «Todos») y eliminar con confirmación.

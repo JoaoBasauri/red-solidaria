@@ -4,7 +4,7 @@ import { LOGO_ACCEPT, LOGO_HELP } from '../../supabase/functions/_shared/ally-lo
 import { checkLogoFile } from '../services/allies.service'
 
 // Selector de logo con validación inmediata (formato, peso, tamaño y proporción) y vista previa.
-export default function LogoPicker({ file, onChange, title = 'Logo de la organización (opcional)', description = 'Si OLI lo aprueba, aparecerá en el banner de organizaciones que se suman en la página de inicio.' }) {
+export default function LogoPicker({ file, onChange, title = 'Logo de la organización (opcional)', description = 'Si OLI lo aprueba, aparecerá en el banner «Nuestros aliados» de la página de inicio.' }) {
   const [error, setError] = useState(''), [info, setInfo] = useState(null)
   const preview = useMemo(() => file ? URL.createObjectURL(file) : '', [file])
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview) }, [preview])
@@ -22,7 +22,7 @@ export default function LogoPicker({ file, onChange, title = 'Logo de la organiz
     {error && <p role="alert" className="mt-3 rounded-lg bg-red-100 p-3 text-sm text-red-800">{error}</p>}
     {file && preview && <div className="mt-4 grid gap-3 sm:grid-cols-2">
       <figure className="grid place-items-center rounded-lg border bg-white p-4"><img src={preview} alt="Vista previa del logo" className="h-16 w-auto max-w-full object-contain" /><figcaption className="mt-2 text-xs text-slate-500">{file.name}{info && ` · ${info.width} × ${info.height}${info.type === 'image/svg+xml' ? '' : ' px'}`}</figcaption></figure>
-      <figure className="grid place-items-center rounded-lg border bg-white p-4"><img src={preview} alt="" className="h-12 w-auto max-w-full object-contain opacity-70 grayscale" /><figcaption className="mt-2 text-xs text-slate-500">Así se verá en el banner (a color al pasar el mouse)</figcaption></figure>
+      <figure className="grid place-items-center rounded-lg border bg-white p-4"><img src={preview} alt="" className="h-12 w-auto max-w-full object-contain" /><figcaption className="mt-2 text-xs text-slate-500">Así se verá en el banner</figcaption></figure>
     </div>}
   </section>
 }
